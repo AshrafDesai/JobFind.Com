@@ -5,6 +5,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from 'sonner';
 import { USER_API_END_POINT } from '@/utils/constant';
+import { useDispatch, useSelector } from 'react-redux';
+import { setLoading } from '@/redux/authSlice';
+import { Button } from '../ui/button';
+import { Loader2 } from 'lucide-react';
 
 const Login = () => {
     const [input, setInput] = useState({
@@ -12,9 +16,9 @@ const Login = () => {
         password: "",
         role: "",
     });
-
-    const navigate = useNavigate();  // Initialize navigate here
-
+    const {loading} = useSelector(store=>store.auth);
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
     const changeEventHandler = (e) => {
         setInput({ ...input, [e.target.name]: e.target.value });
     };
@@ -22,7 +26,11 @@ const Login = () => {
     const submitHandler = async (e) => {
         e.preventDefault();
 
+        
+        console.log("Login data received on frontend:", input);
+
         try {
+            dispatch(setLoading(true));
             const res = await axios.post(
                 `${USER_API_END_POINT}/login`,
                 input,
@@ -33,12 +41,16 @@ const Login = () => {
                     withCredentials: true
                 }
             );
+
             if (res.data.success) {
-                navigate("/Home");  // Navigate to the Home page
+                navigate("/Home");
                 toast.success(res.data.message);
             }
         } catch (error) {
             console.error(error);
+        }
+        finally{
+            dispatch(setLoading(false));
         }
     };
 
@@ -71,7 +83,7 @@ const Login = () => {
                             className="border border-gray-300 p-3 rounded w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-                    
+                    <br></br>
                     <div className='space-y-4'>
                         <div className="flex flex-col space-y-2">
                             <Label className="block text-gray-700 font-bold">Role</Label>
@@ -103,8 +115,9 @@ const Login = () => {
                             </RadioGroup>
                         </div>
                     </div>
-                    
-                    <button type="submit" className="w-full bg-black text-white p-3 rounded-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500">Login</button>
+                    {
+                        loading ? <Button className="w-full my-4"> <Loader2 className='mr-2 h-4 w-4 animate-spin' /> Please wait </Button> : <Button type="submit" className="w-full my-4">Login</Button>
+                    }
                     
                     <div className="text-center mt-4">
                         <span className="text-gray-700">Don't have an account? <Link to='/signup' className="text-blue-600 hover:underline">Signup</Link></span>
