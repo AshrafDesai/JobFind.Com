@@ -7,54 +7,45 @@ import cloudinary from "../utils/cloudinary.js";
 export const register = async (req, res) => {
     try {
         const { fullname, email, phoneNumber, password, role } = req.body;
-        
-
+         
         if (!fullname || !email || !phoneNumber || !password || !role) {
             return res.status(400).json({
-                message: "All fields are required.",
-                success: false,
+                message: "Something is missing",
+                success: false
             });
-        }
+        };
+        const file = req.file;
+        const fileUri = getDataUri(file);
+        const cloudResponse = await cloudinary.uploader.upload(fileUri.content);
 
-        // Check if a user with the provided email already exists
-        const existingUser = await User.findOne({ email });
-        if (existingUser) {
+        const user = await User.findOne({ email });
+        if (user) {
             return res.status(400).json({
-                message: "User already exists with this email.",
+                message: 'User already exist with this email.',
                 success: false,
-            });
+            })
         }
-
-        // Hash the password before saving it to the database
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create a new user
-        const newUser = await User.create({
+        await User.create({
             fullname,
             email,
             phoneNumber,
             password: hashedPassword,
             role,
+            profile:{
+                profilePhoto:cloudResponse.secure_url,
+            }
         });
 
-        // Respond with a success message
         return res.status(201).json({
             message: "Account created successfully.",
-            success: true,
-            user: newUser,
+            success: true
         });
     } catch (error) {
-        console.error("Error in register:", {
-            message: error.message,
-            stack: error.stack,
-            details: error,
-        });
-        return res.status(500).json({
-            message: "An error occurred during signup.",
-            success: false,
-        });
+        console.log(error);
     }
-};
+}
 export const login = async (req, res) => {
     try {
         const { email, password, role } = req.body;
